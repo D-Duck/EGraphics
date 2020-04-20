@@ -4,12 +4,21 @@ from PIL import Image
 from math import cos, sin
 
 # COLORS
-black = (0, 0, 0)
-white = (255, 255, 255)
-red = (255, 0, 0)
-green = (0, 255, 0)
-blue = (0, 0, 255)
-yellow = (255, 255, 0)
+class color:
+    black = (0, 0, 0)
+    white = (255, 255, 255)
+    gray = (150, 150, 150)
+    red = (255, 0, 0)
+    lime = (0, 255, 0)
+    green = (50,205,50)
+    blue = (0, 0, 255)
+    yellow = (255, 255, 0)
+    magenta = (255, 0, 255)
+    light_blue = (0, 255, 255)
+    hot_pink = (255,29,142)
+    brown = (139,69,19)
+    dark_violet = (148,0,211)
+    sky_blue = (135,206,235)
 
 def random_color():
     r = random.randint(0, 255)
@@ -17,7 +26,7 @@ def random_color():
     b = random.randint(0, 255)
     return (r, g, b)
 
-def combine_color(list_of_colors):
+def combine_colors(list_of_colors):
     r, g, b = 0, 0, 0
     for n in range(len(list_of_colors)):
         r += list_of_colors[n][0]
@@ -25,6 +34,13 @@ def combine_color(list_of_colors):
         b += list_of_colors[n][2]
     color = (int(round(r / len(list_of_colors) ,0)), int(round(g / len(list_of_colors) ,0)), int(round(b / len(list_of_colors) ,0)))
     return color
+
+# CONVERTERS
+def deg_to_rad(deg):
+    return deg * 0.01745329
+
+def rad_to_deg(rad):
+    return rad / 0.01745329
 
 # MAIN FUNCTIONS
 def create_window(screen_size=(500, 500), window_title=None):
@@ -73,7 +89,12 @@ def fill(window, rgb_color):
 def draw_circle(window, color, x, y, r, border_width=0):
     pygame.draw.circle(window, color, (x, y), r, border_width)
 
-def draw_rectangle(window, color, x, y, length, height, border_width=0, rotate_deg=0):
+def draw_rectangle(window, color, x, y, length, height, border_width=0, rotate_deg=0, draw_offset="center"):
+    if draw_offset == "center":
+        x, y = x - int(round(length / 2)), y - int(round(height / 2))
+    else:
+        x, y = x - draw_offset[0], y - draw_offset[1]
+
     if rotate_deg != 0:
         rotate_deg = rotate_deg * 0.01745329
         px0, py0 = ((0 - (length / 2)) * cos(rotate_deg) + (0 - (height / 2)) * sin(rotate_deg)) + (x + length / 2), (-(0 - (length / 2)) * sin(rotate_deg) + (0 - (height / 2)) * cos(rotate_deg)) + (y + height / 2)
@@ -85,7 +106,20 @@ def draw_rectangle(window, color, x, y, length, height, border_width=0, rotate_d
     else:
         pygame.draw.rect(window, color, (x, y, length, height), border_width)
 
-def draw_polygon(window, color, list_of_points, border_width=0, rotate_deg=0):
+def draw_polygon(window, color, list_of_points, border_width=0, rotate_deg=0, draw_offset="center"):
+    if draw_offset == "center":
+        x_coords = [p[0] for p in list_of_points]
+        y_coords = [p[1] for p in list_of_points]
+        _len = len(list_of_points)
+        centroid_x = sum(x_coords) / _len
+        centroid_y = sum(y_coords) / _len
+        draw_offset = (centroid_x - list_of_points[0][0], centroid_y - list_of_points[0][1])
+
+    new_list_of_points = []
+    for points in list_of_points:
+        new_list_of_points.append((points[0] - draw_offset[0], points[1] - draw_offset[1]))
+    list_of_points = new_list_of_points
+
     if rotate_deg != 0:
         new_points = []
         rotate_deg = rotate_deg * 0.01745329
@@ -95,22 +129,22 @@ def draw_polygon(window, color, list_of_points, border_width=0, rotate_deg=0):
         _len = len(list_of_points)
         centroid_x = sum(x_coords) / _len
         centroid_y = sum(y_coords) / _len
-        centroid_x, centroid_y
+        new_list = []
         for x, y in list_of_points:
-            x, y = x - centroid_x, y - centroid_y
+                x, y = x - centroid_x, y - centroid_y
 
-            px = x * cos(rotate_deg) + y * sin(rotate_deg)
-            py = -x * sin(rotate_deg) + y * cos(rotate_deg)
+                px = x * cos(rotate_deg) + y * sin(rotate_deg)
+                py = -x * sin(rotate_deg) + y * cos(rotate_deg)
 
-            px, py = px + centroid_x, py + centroid_y
+                px, py = px + centroid_x, py + centroid_y
 
-            new_points.append((px, py))
+                new_points.append((px, py))
 
         pygame.draw.polygon(window, color, new_points, border_width)
     else:
-        pygame.draw.polygon(window, color, list_of_points, border_width)
+        pygame.draw.polygon(window, color, list_of_points, border_width) # #
 
-def draw_line(window, color, x0, y0, x1, y1, border_width=0):
+def draw_line(window, color, x0, y0, x1, y1, border_width=1):
     pygame.draw.line(window, color, (x0, y0), (x1, y1), border_width)
 
 def draw_pixel(window, color, x, y):
@@ -121,7 +155,7 @@ def draw_text(window, color, x, y, text, size=30, font='Arial'):
     textsurface = font.render(str(text), False, color)
     window.blit(textsurface, (x, y))
 
-def draw_image(window, path, x, y, scale_by=0, scale_to=0, rotate_deg=0):
+def draw_image(window, path, x, y, scale_by=0, scale_to=0, rotate_deg=0, draw_offset="center"):
     img = Image.open(path)
 
     if scale_by != 0:
@@ -140,4 +174,8 @@ def draw_image(window, path, x, y, scale_by=0, scale_to=0, rotate_deg=0):
     if scale_to != 0 and scale_by != 0:
         print("Can not scale_by and scale_to at the same time !!")
     else:
+        if draw_offset == "center":
+            x, y = x - int(round(img.get_rect()[2] / 2)), y - int(round(img.get_rect()[3] / 2))
+        else:
+            x, y = x - draw_offset[0], y - draw_offset[1]
         window.blit(img,(x, y))
