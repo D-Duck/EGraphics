@@ -2,6 +2,7 @@ import pygame
 import random
 from PIL import Image
 from math import cos, sin
+from PIL import ImageColor
 
 # COLORS
 class color:
@@ -20,11 +21,9 @@ class color:
     dark_violet = (148,0,211)
     sky_blue = (135,206,235)
 
-def random_color():
-    r = random.randint(0, 255)
-    g = random.randint(0, 255)
-    b = random.randint(0, 255)
-    return (r, g, b)
+def random_color(seed=None):
+    random.seed(seed)
+    return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
 def combine_colors(list_of_colors):
     r, g, b = 0, 0, 0
@@ -41,6 +40,17 @@ def deg_to_rad(deg):
 
 def rad_to_deg(rad):
     return rad / 0.01745329
+
+def rgb_to_hex(rgb):
+    return '#%02x%02x%02x' % (rgb[0], rgb[1], rgb[2])
+
+def hex_to_rgb(hex):
+    if hex[0] != "#":
+        hex = "#" + hex
+    return ImageColor.getrgb(hex)
+
+def pos_to_point(x, y):
+    return (x, y)
 
 # MAIN FUNCTIONS
 def create_window(screen_size=(500, 500), window_title=None):
@@ -79,21 +89,36 @@ def get_mouse_click():
 
     return ml, mm, mr
 
+def get_pixel_color(window, x, y):
+    return window.get_at((x, y))
+
 def get_available_fonts():
     print(pygame.font.get_fonts())
 
 # DRAW FUNCTIONS
-def fill(window, rgb_color):
-    window.fill(rgb_color)
+def fill(window, color):
+    window.fill(color)
 
-def draw_circle(window, color, x, y, r, border_width=0):
+def draw_circle(window, color, x, y, r, border_width=0, draw_offset=(0, 0)):
+    x += draw_offset[0]
+    y += draw_offset[1]
     pygame.draw.circle(window, color, (x, y), r, border_width)
 
-def draw_rectangle(window, color, x, y, length, height, border_width=0, rotate_deg=0, draw_offset="center"):
-    if draw_offset == "center":
-        x, y = x - int(round(length / 2)), y - int(round(height / 2))
-    else:
-        x, y = x - draw_offset[0], y - draw_offset[1]
+def draw_rectangle(window, color, x, y, length, height, border_width=0, rotate_deg=0, draw_offset=(0, 0)):
+    try:
+        if draw_offset[0] == "center":
+            x = x - int(round(length / 2))
+        if draw_offset[1] == "center":
+            y = y - int(round(height / 2))
+
+        if draw_offset[0] != "center":
+            x = x + draw_offset[0]
+        if draw_offset[1] != "center":
+            y = y + draw_offset[1]
+    except:
+        if draw_offset == "center":
+            x = x - int(round(length / 2))
+            y = y - int(round(height / 2))
 
     if rotate_deg != 0:
         rotate_deg = rotate_deg * 0.01745329
@@ -106,7 +131,17 @@ def draw_rectangle(window, color, x, y, length, height, border_width=0, rotate_d
     else:
         pygame.draw.rect(window, color, (x, y, length, height), border_width)
 
-def draw_polygon(window, color, list_of_points, border_width=0, rotate_deg=0, draw_offset="center"):
+def draw_polygon(window, color, list_of_points, border_width=0, rotate_deg=0, draw_offset=(0, 0)):
+    if draw_offset[0] == "center":
+        _len = len(list_of_points)
+        x_coords = [p[0] for p in list_of_points]
+        centroid_x = sum(x_coords) / _len
+        draw_offset = (centroid_x - list_of_points[0][0], draw_offset[1])
+    if draw_offset[1] == "center":
+        _len = len(list_of_points)
+        y_coords = [p[1] for p in list_of_points]
+        centroid_y = sum(y_coords) / _len
+        draw_offset = (draw_offset[0], centroid_y - list_of_points[0][1])
     if draw_offset == "center":
         x_coords = [p[0] for p in list_of_points]
         y_coords = [p[1] for p in list_of_points]
@@ -117,7 +152,7 @@ def draw_polygon(window, color, list_of_points, border_width=0, rotate_deg=0, dr
 
     new_list_of_points = []
     for points in list_of_points:
-        new_list_of_points.append((points[0] - draw_offset[0], points[1] - draw_offset[1]))
+        new_list_of_points.append((points[0] + draw_offset[0], points[1] + draw_offset[1]))
     list_of_points = new_list_of_points
 
     if rotate_deg != 0:
@@ -150,12 +185,29 @@ def draw_line(window, color, x0, y0, x1, y1, border_width=1):
 def draw_pixel(window, color, x, y):
     pygame.draw.rect(window, color, (x, y, 1, 1), 0)
 
-def draw_text(window, color, x, y, text, size=30, font='Arial'):
+def draw_text(window, color, x, y, text, size=30, font='Arial', draw_offset=(0, 0)):
     font = pygame.font.SysFont(font, size)
     textsurface = font.render(str(text), False, color)
+    try:
+        if draw_offset[0] == "center":
+            x = x - int(round(textsurface.get_rect()[2] / 2))
+        else:
+            x = x + draw_offset[0]
+        if draw_offset[1] == "center":
+            y = y - int(round(textsurface.get_rect()[3] / 2))
+        else:
+            y = y + draw_offset[1]
+    except:
+        if draw_offset == "center":
+            x = x - int(round(textsurface.get_rect()[2] / 2))
+            y = y - int(round(textsurface.get_rect()[3] / 2))
+        else:
+            x = x + draw_offset[0]
+            y = y + draw_offset[1]
+
     window.blit(textsurface, (x, y))
 
-def draw_image(window, path, x, y, scale_by=0, scale_to=0, rotate_deg=0, draw_offset="center"):
+def draw_image(window, path, x, y, scale_by=0, scale_to=0, rotate_deg=0, draw_offset=(0, 0)):
     img = Image.open(path)
 
     if scale_by != 0:
@@ -174,8 +226,18 @@ def draw_image(window, path, x, y, scale_by=0, scale_to=0, rotate_deg=0, draw_of
     if scale_to != 0 and scale_by != 0:
         print("Can not scale_by and scale_to at the same time !!")
     else:
-        if draw_offset == "center":
-            x, y = x - int(round(img.get_rect()[2] / 2)), y - int(round(img.get_rect()[3] / 2))
-        else:
-            x, y = x - draw_offset[0], y - draw_offset[1]
+        try:
+            if draw_offset[0] == "center":
+                x = x - int(round(img.get_rect()[2] / 2))
+            else:
+                x = x + draw_offset[0]
+            if draw_offset[1] == "center":
+                y = y - int(round(img.get_rect()[3] / 2))
+            else:
+                y = y + draw_offset[1]
+        except:
+            if draw_offset == "center":
+                x = x - int(round(img.get_rect()[2] / 2))
+                y = y - int(round(img.get_rect()[3] / 2))
+
         window.blit(img,(x, y))
