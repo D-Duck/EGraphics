@@ -104,7 +104,7 @@ def draw_circle(window, color, x, y, r, border_width=0, draw_offset=(0, 0)):
     y += draw_offset[1]
     pygame.draw.circle(window, color, (x, y), r, border_width)
 
-def draw_rectangle(window, color, x, y, length, height, border_width=0, rotate_deg=0, draw_offset=(0, 0)):
+def draw_rectangle(window, color, x, y, length, height, border_width=0, rotate_deg=0, rotate_origin=None,draw_offset=(0, 0)):
     try:
         if draw_offset[0] == "center":
             x = x - int(round(length / 2))
@@ -120,7 +120,13 @@ def draw_rectangle(window, color, x, y, length, height, border_width=0, rotate_d
             x = x - int(round(length / 2))
             y = y - int(round(height / 2))
 
-    if rotate_deg != 0:
+    if rotate_deg != 0 or rotate_origin == "left" or rotate_origin == "right":
+        if rotate_origin  == "right":
+            x, y = cos(deg_to_rad(-rotate_deg)) * -length/2 + x, sin(deg_to_rad(-rotate_deg)) * -length/2 + y
+
+        if rotate_origin  == "left":
+            x, y = cos(deg_to_rad(-rotate_deg)) * length/2 + x, sin(deg_to_rad(-rotate_deg)) * length/2 + y
+
         rotate_deg = rotate_deg * 0.01745329
         px0, py0 = ((0 - (length / 2)) * cos(rotate_deg) + (0 - (height / 2)) * sin(rotate_deg)) + (x + length / 2), (-(0 - (length / 2)) * sin(rotate_deg) + (0 - (height / 2)) * cos(rotate_deg)) + (y + height / 2)
         px1, py1 = ((0 - (length / 2) + length) * cos(rotate_deg) + (0 - (height / 2)) * sin(rotate_deg)) + (x + length / 2), (-(0 - (length / 2) + length) * sin(rotate_deg) + (0 - (height / 2)) * cos(rotate_deg)) + (y + height / 2)
